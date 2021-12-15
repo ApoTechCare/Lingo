@@ -1,4 +1,5 @@
 import Foundation
+import Logging
 
 /// Object represents localization of a given key in a given language.
 ///
@@ -10,13 +11,17 @@ public enum Localization {
     case universal(value: String)
     case pluralized(values: [PluralCategory: String])
     
-    func value(forLocale locale: LocaleIdentifier, interpolations: [String: Any]? = nil) -> String {
+    func value(
+        forLocale locale: LocaleIdentifier,
+        interpolations: [String: Any]? = nil,
+        logger: Logger
+    ) -> String {
         switch self {
             case .universal(let rawString):
                 return self.interpolate(rawString, interpolations: interpolations)
             
             case .pluralized(let values):
-                let pluralCategory = self.pluralCategory(for: locale, interpolations: interpolations)
+                let pluralCategory = self.pluralCategory(for: locale, interpolations: interpolations, logger: logger)
                 guard let rawString = values[pluralCategory] else {
                     print("Missing plural value for category: \(pluralCategory). Will default to an empty string.")
                     return ""
@@ -43,7 +48,11 @@ private extension Localization {
     
     /// The PluralCategory is based on the first numeric value in `interpolations` and `PluralizationRule` for the given language.
     /// If no numeric value is found, it fallbacks to `.other`.
-    func pluralCategory(`for` locale: LocaleIdentifier, interpolations: [String: Any]?) -> PluralCategory {
+    func pluralCategory(
+        `for` locale: LocaleIdentifier,
+        interpolations: [String: Any]?,
+        logger: Logger
+    ) -> PluralCategory {
         // If there are no interpolations, or there is not a single numeric value in them,
         // there is no way to determine which plural category to use, so default to .other
         guard let interpolations = interpolations, let numericValue = self.extractNumericValue(from: interpolations) else {
@@ -52,7 +61,7 @@ private extension Localization {
         
         // If no pluralization rule is defined for current language, default to .other.
         guard let pluralizationRule = PluralizationRuleStore.pluralizationRule(forLocale: locale) else {
-            print("Missing pluralization rule for locale: \(locale). Will default to `other` rule.")
+            logger.trace("Missing pluralization rule for locale: \(locale). Will default to `other` rule.")
             return .other
         }
         
