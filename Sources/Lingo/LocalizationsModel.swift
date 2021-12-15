@@ -1,4 +1,5 @@
 import Foundation
+import Logging
 
 class LocalizationsModel {
     
@@ -24,7 +25,12 @@ class LocalizationsModel {
     
     /// Returns localized string of a given key in the given locale.
     /// If string contains interpolations, they are replaced from the dictionary.
-    func localize(_ key: LocalizationKey, locale: LocaleIdentifier, interpolations: [String: Any]? = nil) -> LocalizationResult {
+    func localize(
+        _ key: LocalizationKey,
+        locale: LocaleIdentifier,
+        interpolations: [String: Any]? = nil,
+        logger: Logger
+    ) -> LocalizationResult {
         guard let localeBucket = self.data[locale] else {
             return .missingLocale
         }
@@ -33,7 +39,7 @@ class LocalizationsModel {
             return .missingKey
         }
         
-        let localizedString = localization.value(forLocale: locale, interpolations: interpolations)
+        let localizedString = localization.value(forLocale: locale, interpolations: interpolations, logger: logger)
         return .success(localization: localizedString)
     }
 
